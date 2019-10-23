@@ -42,6 +42,7 @@ zlibpostfix="-install"
 zlibextension=".tar.gz"
 zlibpack=$path/$zlibprefix$zlibversion$zlibextension
 zlibunpack=$path/$zlibprefix$zlibversion
+zlibinstall=$path/$zlibprefix$zlibversion$zlibpostfix
 zliburl=https://www.zlib.net/fossils/zlib-$zlibversion$zlibextension
 
 # set python parameters
@@ -49,6 +50,7 @@ pyprefix="Python-"
 pyextension=".tgz"
 pypack=$path/$pyprefix$pyversion$pyextension
 pyunpack=$path/$pyprefix$pyversion
+pyinstall=$path/$pyversion
 pyurl=https://www.python.org/ftp/python/$pyversion/$pyprefix$pyversion$pyextension
 
 
@@ -70,10 +72,10 @@ wget -O $zlibpack $zliburl
 tar --gzip -C $path -xf $zlibpack
 
 # install
-mkdir $zlibprefix$zlibversion$zlib$zlibpostfix
-cd $zlibprefix$zlibversion
-./configure --prefix=$path/$zlibprefix$zlibversion$zlibpostfix | tee $path/$zlibprefix$zlibversion.log
-make -j4 | tee -a $path/$zlibprefix$zlibversion.log && make -j4 install | tee -a $path/$zlibprefix$zlibversion.log
+mkdir $zlibinstall
+cd $zlibunpack
+./configure --prefix=$zlibinstall | tee $zlibunpack.log
+make -j4 | tee -a $zlibunpack.log && make -j4 install | tee -a $zlibunpack.log
 
 
 cd $path
@@ -87,11 +89,11 @@ wget -O $pypack $pyurl
 tar --gzip -C $path -xf $pypack
 
 # install
-mkdir $pyversion
-cd $pyprefix$pyversion
-./configure --enable-optimizations --prefix=$path/$pyversion --includedir=/home/daniel/Downloads/mytest/zlib-1.2.11-install/include/ --libdir=/home/daniel/Downloads/mytest/zlib-1.2.11-install/lib/ | tee $path/$pyprefix$pyversion.log
-make -j4 | tee -a $path/$pyprefix$pyversion.log && make -j4 install | tee -a $path/$pyprefix$pyversion.log
+mkdir $pyinstall
+cd $pyunpack
+./configure --enable-optimizations --prefix=$pyinstall --includedir=$zlibinstall/include --libdir=$zlibinstall/lib | tee $pyunpack.log
+make -j4 | tee -a $pyunpack.log && make -j4 install | tee -a $pyunpack.log
 
 # clean
 cd $curdir
-rm -r $pypack $pyunpack $zlibpack $zlibunpack
+rm -r $pypack $pyunpack $zlibpack $zlibunpack $zlibinstall
