@@ -88,12 +88,22 @@ wget -O $pypack $pyurl
 # unpack
 tar --gzip -C $path -xf $pypack
 
+# copy libs
+#mkdir $pyunpack/Include/zlib
+#cp -r $zlibinstall/include/* $pyunpack/Include/zlib
+#mkdir $pyunpack/Lib/zlib
+#cp -r $zlibinstall/lib/* $pyunpack/Lib/zlib
+
 # install
 mkdir $pyinstall
 cd $pyunpack
+export CFLAGS=-I$zlibinstall/include
+export LDFLAGS=-L$zlibinstall/lib
+export LIBS=-lz
 ./configure --enable-optimizations --prefix=$pyinstall --includedir=$zlibinstall/include --libdir=$zlibinstall/lib | tee $pyunpack.log
+#./configure --enable-optimizations --prefix=$pyinstall | tee $pyunpack.log
 make -j4 | tee -a $pyunpack.log && make -j4 install | tee -a $pyunpack.log
 
 # clean
 cd $curdir
-rm -r $pypack $pyunpack $zlibpack $zlibunpack $zlibinstall
+#rm -r $pypack $pyunpack $zlibpack $zlibunpack $zlibinstall
