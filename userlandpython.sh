@@ -41,7 +41,8 @@ fi
 
 if [ -z $pyversion ]
 then
-    pyversion=3.7.5
+    #pyversion=3.7.5
+    pyversion=3.7.2
 fi
 
 if [ -z $zlibversion ]
@@ -56,12 +57,14 @@ fi
 
 if [ -z $bisonversion ]
 then
-    bisonversion=3.4
+    #bisonversion=3.4.2
+    bisonversion=3.3.2
 fi
 
 if [ -z $glibcversion ]
 then
-    glibcversion=2.30
+    #glibcversion=2.30
+    glibcversion=2.29
 fi
 
 ########################
@@ -75,132 +78,98 @@ cd $path
 
 
 
+for libname in "zlib" "gawk" "bison" "glibc"
+do
+    echo
+    echo
+    echo
+    echo "##################################"
+    echo "# Build $libname"
+    echo "##################################"
+    echo
+    echo
+    echo
+    
+    # go to base path
+    cd $path
 
-########################
-# build zlib
-########################
-# go to base path
-cd $path
+    # set lib parameters
+    if [ $libname = "zlib" ]
+    then
+        libversion=$zlibversion
+    elif [ $libname = "gawk" ]
+    then
+        libversion=$gawkversion
+    elif [ $libname = "bison" ]
+    then
+        libversion=$bisonversion
+    elif  [ $libname = "glibc" ]
+    then
+        libversion=$glibcversion
+    fi
+    libprefix="$libname-"
+    libpostfix="-build"
+    libextension=".tar.gz"
+    libpack=$path/$libprefix$libversion$libextension
+    libunpack=$path/$libprefix$libversion
+    libbuild=$path/$libprefix$libversion$libpostfix
+    if [ $libname = "zlib" ]
+    then
+        liburl=https://www.$libname.net/fossils/$libprefix$libversion$libextension
+    elif [ $libname = "gawk" ] || [ $libname = "bison" ] || [ $libname = "glibc" ]
+    then
+        liburl=https://ftp.gnu.org/gnu/$libname/$libprefix$libversion$libextension
+    fi
 
-# set zlib parameters
-zlibprefix="zlib-"
-zlibpostfix="-build"
-zlibextension=".tar.gz"
-zlibpack=$path/$zlibprefix$zlibversion$zlibextension
-zlibunpack=$path/$zlibprefix$zlibversion
-zlibbuild=$path/$zlibprefix$zlibversion$zlibpostfix
-zliburl=https://www.zlib.net/fossils/zlib-$zlibversion$zlibextension
+    # download
+    wget -O $libpack $liburl
 
-# download
-wget -O $zlibpack $zliburl
+    # unpack
+    tar --gzip -C $path -xf $libpack
 
-# unpack
-tar --gzip -C $path -xf $zlibpack
+    # build
+    if [ $libname = "zlib" ] || [ $libname = "gawk" ] || [ $libname = "bison" ]
+    then
+        export CFLAGS="-O3"
+        export LDFLAGS=
+        export LIBS=
+    elif [ $libname = "glibc" ]
+    then
+        export CFLAGS="-O3 -I$path/build/include"
+        export LDFLAGS="-L$path/build/lib"
+        export LIBS=
+    fi
+    mkdir $libbuild
+    cd $libbuild
+    #if [ $libname = "zlib" ]
+    #then
+    #    $libunpack/configure --prefix=$libbuild --eprefix=$path/build | tee $libunpack.log
+    #else
+    #    $libunpack/configure --prefix=$libbuild --exec-prefix=$path/build | tee $libunpack.log
+    #fi
+    $libunpack/configure --prefix=$path/build | tee $libunpack.log
+    make -j4 | tee -a $libunpack.log && make -j4 install | tee -a $libunpack.log
+    
+    if [ $libname = "gawk" ] || [ $libname = "bison" ]
+    then
+        #export PATH=$libbuild/bin:$PATH
+        export PATH=$path/build/bin:$PATH
+    fi
+    echo $PATH
+    
+    
+    
+    echo
+    echo
+    echo
+    echo "##################################"
+    echo "# Finished $libname"
+    echo "##################################"
+    echo
+    echo
+    echo
+done
 
-# build
-#mkdir $zlibbuild
-cd $zlibunpack
-./configure --prefix=$zlibbuild | tee $zlibunpack.log
-make -j4 | tee -a $zlibunpack.log && make -j4 install | tee -a $zlibunpack.log
-
-########################
-# build gawk
-########################
-# go to base path
-cd $path
-
-# set gawk parameters
-gawkprefix="gawk-"
-gawkpostfix="-build"
-gawkextension=".tar.gz"
-gawkpack=$path/$gawkprefix$gawkversion$gawkextension
-gawkunpack=$path/$gawkprefix$gawkversion
-gawkbuild=$path/$gawkprefix$gawkversion$gawkpostfix
-gawkurl=https://ftp.gnu.org/gnu/gawk/$gawkprefix$gawkversion$gawkextension
-
-# download
-wget -O $gawkpack $gawkurl
-
-# unpack
-tar --gzip -C $path -xf $gawkpack
-
-# build
-mkdir $gawkbuild
-cd $gawkbuild
-export CFLAGS=
-export LDFLAGS=
-export LIBS=
-$gawkunpack/configure --prefix=$gawkbuild | tee $gawkunpack.log
-make -j4 | tee -a $gawkunpack.log && make -j4 install | tee -a $gawkunpack.log
-
-export PATH=$gawkbuild/bin:$PATH
-
-
-########################
-# build bison
-########################
-# go to base path
-cd $path
-
-# set bison parameters
-bisonprefix="bison-"
-bisonpostfix="-build"
-bisonextension=".tar.gz"
-bisonpack=$path/$bisonprefix$bisonversion$bisonextension
-bisonunpack=$path/$bisonprefix$bisonversion
-bisonbuild=$path/$bisonprefix$bisonversion$bisonpostfix
-bisonurl=https://ftp.gnu.org/gnu/bison/$bisonprefix$bisonversion$bisonextension
-
-# download
-wget -O $bisonpack $bisonurl
-
-# unpack
-tar --gzip -C $path -xf $bisonpack
-
-# build
-mkdir $bisonbuild
-cd $bisonbuild
-export CFLAGS=
-export LDFLAGS=
-export LIBS=
-$bisonunpack/configure --prefix=$bisonbuild | tee $bisonunpack.log
-make -j4 | tee -a $bisonunpack.log && make -j4 install | tee -a $bisonunpack.log
-
-
-
-########################
-# build glibc
-########################
-# go to base path
-cd $path
-
-# set glibc parameters
-glibcprefix="glibc-"
-glibcpostfix="-build"
-glibcextension=".tar.gz"
-glibcpack=$path/$glibcprefix$glibcversion$glibcextension
-glibcunpack=$path/$glibcprefix$glibcversion
-glibcbuild=$path/$glibcprefix$glibcversion$glibcpostfix
-glibcurl=https://ftp.gnu.org/gnu/glibc/$glibcprefix$glibcversion$glibcextension
-
-# download
-wget -O $glibcpack $glibcurl
-
-# unpack
-tar --gzip -C $path -xf $glibcpack
-
-# build
-mkdir $glibcbuild
-cd $glibcbuild
-export CFLAGS=-I$bisonbuild/include
-export LDFLAGS=-L$bisonbuild/lib
-export LIBS=
-$glibcunpack/configure --prefix=$glibcbuild | tee $glibcunpack.log
-make -j4 | tee -a $glibcunpack.log && make -j4 install | tee -a $glibcunpack.log
-
-
-echo 'sh userlandpython.sh -p /home/daniel/Downloads/mytest'
-exit
 
 ########################
 # build python
@@ -222,22 +191,23 @@ wget -O $pypack $pyurl
 # unpack
 tar --gzip -C $path -xf $pypack
 
-# copy libs
-#mkdir $pyunpack/Include/zlib
-#cp -r $zlibbuild/include/* $pyunpack/Include/zlib
-#mkdir $pyunpack/Lib/zlib
-#cp -r $zlibbuild/lib/* $pyunpack/Lib/zlib
-
 # build
-mkdir $pybuild
+#mkdir $pybuild
 cd $pyunpack
-export CFLAGS=-I$zlibbuild/include
-export LDFLAGS=-L$zlibbuild/lib
-export LIBS=-lz
-./configure --enable-optimizations --prefix=$pybuild --includedir=$zlibbuild/include --libdir=$zlibbuild/lib | tee $pyunpack.log
-#./configure --enable-optimizations --prefix=$pybuild | tee $pyunpack.log
+export CFLAGS="-Wl,--rpath=$path/build/lib,--dynamic-linker=$path/build/lib/ld-linux-x86-64.so.2 -I$path/build/include"
+export LDFLAGS="-L$path/build/lib"
+#export LDFLAGS="--rpath=$path/build/lib --dynamic-linker=$path/build/lib/ld-linux-x86-64.so.2 -L$path/build/lib"
+export LIBS="-lz"
+#./configure --enable-optimizations --prefix=$pybuild \
+#    --includedir=$path/zlib-$zlibversion-build/include \
+#    --libdir=$path/zlib-$zlibversion-build/lib | tee $pyunpack.log
+./configure --prefix=$pybuild \
+    --includedir=$path/build/include \
+    --libdir=$path/build/lib | tee $pyunpack.log
 make -j4 | tee -a $pyunpack.log && make -j4 install | tee -a $pyunpack.log
 
 # clean
 cd $curdir
 #rm -r $pypack $pyunpack $zlibpack $zlibunpack $zlibbuild
+echo "sh userlandpython.sh -p /home/daniel/Downloads/mytest"
+
